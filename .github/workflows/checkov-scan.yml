@@ -1,1 +1,35 @@
+name: Checkov IaC Security Scan  # Nama workflow
 
+on:  # Trigger: Jalankan pada push atau PR ke branch main
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checkov-scan:  # Nama job
+    runs-on: ubuntu-latest  # Runner OS (Ubuntu terbaru, gratis)
+    steps:
+      - name: Checkout code  # Langkah 1: Ambil kode dari repositori
+        uses: actions/checkout@v4  # Action resmi GitHub untuk checkout
+
+      - name: Set up Python  # Langkah 2: Setup Python (diperlukan untuk Checkov)
+        uses: actions/setup-python@v4  # Action resmi untuk install Python
+        with:
+          python-version: '3.9'  # Versi Python yang stabil
+
+      - name: Install Checkov  # Langkah 3: Instal Checkov via pip
+        run: |
+          pip install checkov  # Instalasi sederhana
+
+      - name: Run Checkov Scan  # Langkah 4: Jalankan pemindaian
+        run: |
+          checkov -f . --framework terraform --output cli --compact  # Pemindaian untuk Terraform; ubah framework jika berbeda
+        continue-on-error: true  # Pipeline tetap lanjut meski ada kerentanan (opsional, hapus jika ingin fail)
+
+      - name: Upload Checkov Results  # Langkah 5: Upload hasil sebagai artifact
+        uses: actions/upload-artifact@v3  # Action untuk menyimpan file
+        if: always()  # Jalankan selalu, bahkan jika step sebelumnya gagal
+        with:
+          name: checkov-results  # Nama artifact
+          path: checkov-report.json  # Path file laporan (pastikan diekspor di step sebelumnya)
