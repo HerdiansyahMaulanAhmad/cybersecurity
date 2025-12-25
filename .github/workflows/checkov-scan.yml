@@ -1,35 +1,33 @@
-name: Checkov IaC Security Scan  # Nama workflow
+name: Checkov IaC Security Scan
 
-on:  # Trigger: Jalankan pada push atau PR ke branch main
+on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  checkov-scan:  # Nama job
-    runs-on: ubuntu-latest  # Runner OS (Ubuntu terbaru, gratis)
+  checkov-scan:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code  # Langkah 1: Ambil kode dari repositori
-        uses: actions/checkout@v4  # Action resmi GitHub untuk checkout
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Python  # Langkah 2: Setup Python (diperlukan untuk Checkov)
-        uses: actions/setup-python@v4  # Action resmi untuk install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'  # Versi Python yang stabil
+          python-version: '3.10'
 
-      - name: Install Checkov  # Langkah 3: Instal Checkov via pip
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov Scan
         run: |
-          pip install checkov  # Instalasi sederhana
-
-      - name: Run Checkov Scan  # Langkah 4: Jalankan pemindaian
-        run: |
-          checkov -f . --framework terraform --output cli --compact  # Pemindaian untuk Terraform; ubah framework jika berbeda
-        continue-on-error: true  # Pipeline tetap lanjut meski ada kerentanan (opsional, hapus jika ingin fail)
-
-      - name: Upload Checkov Results  # Langkah 5: Upload hasil sebagai artifact
-        uses: actions/upload-artifact@v3  # Action untuk menyimpan file
-        if: always()  # Jalankan selalu, bahkan jika step sebelumnya gagal
+          checkov -d . --framework terraform --output json --output-file-path .
+        
+      - name: Upload Checkov Results
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: checkov-results  # Nama artifact
-          path: checkov-report.json  # Path file laporan (pastikan diekspor di step sebelumnya)
+          name: checkov-results
+          path: results_json.json
